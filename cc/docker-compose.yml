@@ -1,0 +1,10 @@
+services:
+  stormhub-minio:
+    container_name: stormhub-minio
+    command: tail -f /dev/null
+    build:
+      context: ..
+      dockerfile: cc/Dockerfile
+    env_file:
+      - minio/minio.env
+    network_mode: "host"
