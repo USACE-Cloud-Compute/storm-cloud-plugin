@@ -1,13 +1,13 @@
 import json
 import logging
+import multiprocessing
 from pathlib import Path
 from cc.plugin_manager import PluginManager, DataSource, DataSourceOpInput
 from stormhub.logger import initialize_logger
 from stormhub.met.storm_catalog import new_catalog, new_collection
 
 # Initialize logger
-initialize_logger(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+initialize_logger(level=logging.INFO)
 
 class StormHubProcessor:
     """Handles downloading, processing, and uploading storm data."""
@@ -112,6 +112,8 @@ class StormHubProcessor:
 
     def process_storm_data(self):
         """Create and process a storm catalog using defined parameters."""
+        # Use 'spawn' instead of 'fork' for stability across platforms/architectures
+        multiprocessing.set_start_method("spawn", force=True)
         # Create a new storm catalog using provided configurations
         catalog = new_catalog(
             self.catalog_id,
