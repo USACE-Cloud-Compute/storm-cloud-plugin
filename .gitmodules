@@ -1,0 +1,3 @@
+[submodule "stormhub"]
+	path = stormhub
+	url = https://github.com/Dewberry/stormhub.git
