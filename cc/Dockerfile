@@ -1,4 +1,4 @@
-FROM --platform=linux/amd64 amazonlinux:2023
+FROM amazonlinux:2023
 
 # Install Python 3.12
 RUN dnf install which -y
