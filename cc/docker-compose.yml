@@ -8,3 +8,10 @@ services:
     env_file:
       - minio/minio.env
     network_mode: "host"
+
+  stormhub-cloud:
+    container_name: stormhub-cloud
+    build:
+      context: ..
+      dockerfile: cc/Dockerfile
+    network_mode: "host"

@@ -1,4 +1,6 @@
 #!/bin/bash
+# This script starts StormHub with MinIO in Docker
+# It re-initializes the MinIO buckets and starts the StormHub script
 
 CC_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "CC_DIR: $CC_DIR"
