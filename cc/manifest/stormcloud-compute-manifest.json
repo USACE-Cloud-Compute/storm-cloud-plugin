@@ -1,0 +1,40 @@
+{
+    "manifest_name":     "stormcloud",
+    "plugin_definition": "STORMCLOUD",
+    "stores": [
+        {
+            "name": "StormHubStore",
+            "store_type": "S3",
+            "profile": "FFRD",
+            "params": {
+                "root": "/model-library/stormhub-store"
+            }
+        }
+    ],
+    "inputs":{
+      "payload_attributes": {
+            "catalog_id": "Storm Catalog",
+            "catalog_description": "Storm Catalog Description",
+            "start_date": "1979-10-01",
+            "end_date": "2022-12-01",
+            "storm_duration": 72,
+            "min_precip_threshold": 0,
+            "top_n_events": 440,
+            "check_every_n_hours": 72,
+            "specific_dates": [],
+            "input_path": "user-inputs/nvan/duwamish",
+            "output_path": "user-outputs/nvan/duwamish"
+      },
+      "data_sources": [{
+            "name": "StormHubInputs",
+            "paths": {
+                "watershed": "{ATTR::input_path}/duwamish-watershed.geojson",
+                "transposition": "{ATTR::input_path}/duwamish-transposition.geojson"
+            },
+            "data_paths": {},
+            "store_name": "StormHubStore"
+    }]
+    },
+    "outputs": [],
+    "actions": []
+}
