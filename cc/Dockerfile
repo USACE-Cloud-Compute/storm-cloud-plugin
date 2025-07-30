@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 # Copy files to install Python packages
 COPY stormhub/pyproject.toml .
 COPY stormhub/stormhub ./stormhub
-COPY cc/cc_py_sdk/cc_py_sdk-0.1.1-py3-none-any.whl ./cc/cc_py_sdk/cc_py_sdk-0.1.1-py3-none-any.whl
+COPY cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl ./cc/cc_py_sdk/cc_py_sdk-0.1.1-py3-none-any.whl
 COPY cc/requirements.txt ./cc/requirements.txt
 
 # Install Python packages
