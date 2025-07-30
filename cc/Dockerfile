@@ -12,7 +12,7 @@ WORKDIR /usr/src/app
 # Copy files to install Python packages
 COPY stormhub/pyproject.toml .
 COPY stormhub/stormhub ./stormhub
-COPY cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl ./cc/cc_py_sdk/cc_py_sdk-0.1.1-py3-none-any.whl
+COPY cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl ./cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl
 COPY cc/requirements.txt ./cc/requirements.txt
 
 # Install Python packages
@@ -23,5 +23,5 @@ RUN python3.12 -m pip install -r requirements.txt
 # Copy main script
 COPY cc/main.py .
 
-# Set entry point
-ENTRYPOINT ["python3.12", "main.py"]
+# Set entry point (Optional, uncomment if needed)
+# ENTRYPOINT ["python3.12", "main.py"]
