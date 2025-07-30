@@ -28,11 +28,11 @@ services:
       mc alias set s3-minio http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
       mc admin user add s3-minio $$CC_AWS_ACCESS_KEY_ID $$CC_AWS_SECRET_ACCESS_KEY &&
       mc admin policy attach s3-minio readwrite --user $$CC_AWS_ACCESS_KEY_ID &&
-      mc admin user add s3-minio $$StormHub_AWS_ACCESS_KEY_ID $$StormHub_AWS_SECRET_ACCESS_KEY &&
-      mc admin policy attach s3-minio readwrite --user $$StormHub_AWS_ACCESS_KEY_ID &&
-      mc mb --ignore-existing s3-minio/$$CC_AWS_BUCKET &&
-      mc mb --ignore-existing s3-minio/$$StormHub_AWS_BUCKET &&
-      mc put inputs/payload s3-minio/$$CC_AWS_BUCKET/$$CC_ROOT/$$CC_PAYLOAD_ID/payload &&
-      mc put inputs/duwamish-transposition.geojson s3-minio/$$StormHub_AWS_BUCKET/$$StormHub_INPUT_PATH/duwamish-transposition.geojson &&
-      mc put inputs/duwamish-watershed.geojson s3-minio/$$StormHub_AWS_BUCKET/$$StormHub_INPUT_PATH/duwamish-watershed.geojson
+      mc admin user add s3-minio $$FFRD_AWS_ACCESS_KEY_ID $$FFRD_AWS_SECRET_ACCESS_KEY &&
+      mc admin policy attach s3-minio readwrite --user $$FFRD_AWS_ACCESS_KEY_ID &&
+      mc mb --ignore-existing s3-minio/$$CC_AWS_S3_BUCKET &&
+      mc mb --ignore-existing s3-minio/$$FFRD_AWS_S3_BUCKET &&
+      mc put inputs/payload s3-minio/$$CC_AWS_S3_BUCKET/$$CC_ROOT/$$CC_PAYLOAD_ID/payload &&
+      mc put inputs/duwamish-transposition.geojson s3-minio/$$FFRD_AWS_S3_BUCKET/$$StormHub_INPUT_PATH/duwamish-transposition.geojson &&
+      mc put inputs/duwamish-watershed.geojson s3-minio/$$FFRD_AWS_S3_BUCKET/$$StormHub_INPUT_PATH/duwamish-watershed.geojson
       "
