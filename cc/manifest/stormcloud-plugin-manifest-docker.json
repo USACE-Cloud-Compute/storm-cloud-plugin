@@ -2,7 +2,7 @@
     "name":"STORMCLOUD",
     "image_and_tag":"cc-stormhub-cloud:latest",
     "description":"StormCloud runner",
-    "command":[],
+    "command":["python3.12", "main.py"],
     "compute_environment":{
         "vcpu":"8",
         "memory":"15000"
