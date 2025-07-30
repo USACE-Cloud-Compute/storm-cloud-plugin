@@ -5,9 +5,9 @@
         "concurrency":1,
         "queue": "docker-local"
     },
-    "plugins": ["stormcloud-plugin-manifest-docker.json"],
+    "plugins": ["stormhub-plugin-manifest.json"],
     "event":{
-        "compute-manifests":["stormcloud-compute-manifest.json"]
+        "compute-manifests":["stormhub-compute-manifest.json"]
     },
     "secrets-manager":{
         "type": "env",

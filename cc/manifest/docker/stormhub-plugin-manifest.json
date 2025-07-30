@@ -1,5 +1,5 @@
 {
-    "name":"STORMCLOUD",
+    "name":"STORMHUB",
     "image_and_tag":"cc-stormhub-cloud:latest",
     "description":"StormCloud runner",
     "command":["python3.12", "main.py"],
