@@ -2,12 +2,12 @@
   "attributes": {
 	"catalog_id": "Storm Catalog",
 	"catalog_description": "Storm Catalog Description",
-	"start_date": "1979-10-01",
-	"end_date": "2022-12-01",
+	"start_date": "2022-12-01",
+	"end_date": "2022-12-31",
 	"storm_duration": 72,
 	"min_precip_threshold": 0,
-	"top_n_events": 440,
-	"check_every_n_hours": 72,
+	"top_n_events": 10,
+	"check_every_n_hours": 10,
 	"specific_dates": [],
 	"input_path": "user-inputs/nvan/duwamish",
 	"output_path": "user-outputs/nvan/duwamish"
