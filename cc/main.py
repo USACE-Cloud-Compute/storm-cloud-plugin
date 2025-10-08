@@ -30,15 +30,27 @@ class StormHubProcessor:
         self.local_output_dir = f"{self.local_root_dir}/{self.catalog_id}"  # Local storage for processed storm data
 
         # Extract storm analysis parameters from the payload
-        self.storm_params = {
-            "start_date": self.payload.attributes["start_date"],  # Start date for storm analysis
-            "end_date": self.payload.attributes.get("end_date", ""),  # Optional end date
-            "storm_duration": self.payload.attributes["storm_duration"],  # Duration of storms to analyze
-            "min_precip_threshold": self.payload.attributes["min_precip_threshold"],  # Minimum precipitation threshold
-            "top_n_events": self.payload.attributes["top_n_events"],  # Number of top storm events to retain
-            "check_every_n_hours": self.payload.attributes["check_every_n_hours"],  # Frequency of storm checks
-            "specific_dates": self.payload.attributes.get("specific_dates", []),  # Specific dates for storm selection
-        }
+        try:
+            attrs = self.payload.attributes
+            
+            self.storm_params = {
+                # Start date for storm analysis (String) - Required
+                "start_date": attrs["start_date"],
+                # Optional end date (String)
+                "end_date": attrs.get("end_date", ""),
+                # Duration of storms to analyze (Integer)
+                "storm_duration": int(attrs.get("storm_duration", 72)),
+                # Minimum precipitation threshold (Float)
+                "min_precip_threshold": float(attrs.get("min_precip_threshold", 0.0)),
+                # Number of top storm events to retain (Integer)
+                "top_n_events": int(attrs.get("top_n_events", 10)),
+                # Frequency of storm checks (Integer)
+                "check_every_n_hours": int(attrs.get("check_every_n_hours", 24)),
+                # Specific dates for storm selection (List of Strings)
+                "specific_dates": json.loads(attrs.get("specific_dates", "[]")) if attrs.get("specific_dates") else []
+            }
+        except (KeyError, ValueError, json.JSONDecodeError) as e:
+            raise ValueError(f"Invalid storm parameters in payload: {e}")
 
         # Ensure the local root directory exists for storing files
         Path(self.local_root_dir).mkdir(parents=True, exist_ok=True)
