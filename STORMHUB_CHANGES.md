@@ -5,7 +5,7 @@ This document tracks changes made to the StormHub submodule that are pending ups
 ## Fix: NaN values during reprojection in DSS creation
 
 **Branch**: `fix/nan-values-after-reprojection`
-**Commit**: 1d95c70
+**Commit**: e1ab944
 **Status**: Ready for upstream PR
 
 ### Problem
@@ -25,25 +25,32 @@ The `write_to_dss()` function reprojects data from 1km AORC (WGS84) to 4km SHG (
 While StormHub already handles NaN values **before** reprojection (in `get_s3_zarr_data()`), the reprojection itself was introducing new NaN values.
 
 ### Solution
-**Use explicit `Resampling.average` method during reprojection**:
-- Add `resampling=Resampling.average` parameter to `rio.reproject()` calls
-- This properly aggregates sixteen 1km cells into one 4km cell
-- Physically appropriate for precipitation data aggregation
-- Prevents NaN creation at grid edges instead of fixing them afterward
+**Two-part fix for robust NaN handling**:
 
-This is the correct approach because:
-1. **Prevents the problem** rather than working around it
-2. **Physically meaningful** - averaging is the right method for precipitation
-3. **Minimal code change** - only 4 lines modified
-4. **No backward compatibility issues** - just specifying what was implicit
+1. **Use proper resampling method**:
+   - Add `resampling=Resampling.average` to `rio.reproject()` calls
+   - Physically appropriate for aggregating precipitation from 1km to 4km
+   - Reduces but doesn't completely eliminate edge NaN values
+
+2. **Add fallback NaN handling**:
+   - Check for NaN after reprojection with `data.isnull().any()`
+   - Fill remaining NaN values with 0 using `data.fillna(0)`
+   - Handles edge cases where CRS transformation still introduces NaN
+
+This combination ensures robustness:
+- `Resampling.average` = correct physical method + fewer NaN values
+- `fillna(0)` = safety net for edge cases that can't be avoided
+- Minimal code change (8 lines added)
+- No backward compatibility issues
 
 ### Files Changed
 - `stormhub/met/zarr_to_dss.py`:
   - Added `from rasterio.enums import Resampling` import (line 410)
   - Added `resampling=Resampling.average` to both reproject calls (lines 413, 423)
+  - Added NaN check and fillna() after reprojection (lines 414-418)
 
 ### Testing
-Tested with watershed geometries that previously triggered NaN errors. DSS files now successfully created for all storm events with no NaN values.
+Tested with Duwamish watershed. All 5 storm events now successfully convert to DSS files with no NaN errors.
 
 ### Future: Contributing Upstream
 
