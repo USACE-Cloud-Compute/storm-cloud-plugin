@@ -2,10 +2,10 @@
 
 This document tracks changes made to the StormHub submodule that are pending upstream contribution.
 
-## Fix: NaN values after reprojection in DSS creation
+## Fix: NaN values during reprojection in DSS creation
 
 **Branch**: `fix/nan-values-after-reprojection`
-**Commit**: d7072d1
+**Commit**: 1d95c70
 **Status**: Ready for upstream PR
 
 ### Problem
@@ -17,33 +17,33 @@ ValueError: cannot convert float NaN to integer
 This occurs in `hec-dss-python`'s `GriddedData.update_grid_info()` when it tries to calculate `bin_range` from min/max values that contain NaN.
 
 ### Root Cause
-The `write_to_dss()` function reprojects data from 1km AORC (WGS84) to 4km SHG grid. This reprojection can introduce NaN values at grid edges due to:
-- Misalignment between source and target grid boundaries
-- CRS transformation artifacts
-- Resolution change from 1km to 4km
+The `write_to_dss()` function reprojects data from 1km AORC (WGS84) to 4km SHG (Albers Equal Area). The reprojection was using the **default resampling method**, which creates NaN values at grid edges due to:
+- Grid misalignment between source (1km lat/lon) and target (4km Albers)
+- Default resampling method not properly handling edge cases
+- CRS transformation artifacts at boundaries
 
-While StormHub already handles NaN values **before** reprojection (in `get_s3_zarr_data()`), it didn't handle NaN values **introduced by** reprojection.
+While StormHub already handles NaN values **before** reprojection (in `get_s3_zarr_data()`), the reprojection itself was introducing new NaN values.
 
 ### Solution
-1. **Generalized `interpolate_nan_values()` function**:
-   - Added `dim1` and `dim2` parameters (default: "latitude", "longitude")
-   - Now works with any spatial dimensions (e.g., "x", "y" after reprojection)
-   - Preserves original units instead of hardcoding "K"
-   - Fully backward compatible
+**Use explicit `Resampling.average` method during reprojection**:
+- Add `resampling=Resampling.average` parameter to `rio.reproject()` calls
+- This properly aggregates sixteen 1km cells into one 4km cell
+- Physically appropriate for precipitation data aggregation
+- Prevents NaN creation at grid edges instead of fixing them afterward
 
-2. **Added post-reprojection NaN handling in `write_to_dss()`**:
-   - Detects NaN values after reprojection
-   - Applies bidirectional interpolation per time slice
-   - Uses the same averaging strategy as pre-reprojection handling
-   - Falls back to `fillna(0)` for corner NaNs
+This is the correct approach because:
+1. **Prevents the problem** rather than working around it
+2. **Physically meaningful** - averaging is the right method for precipitation
+3. **Minimal code change** - only 4 lines modified
+4. **No backward compatibility issues** - just specifying what was implicit
 
 ### Files Changed
 - `stormhub/met/zarr_to_dss.py`:
-  - Modified `interpolate_nan_values()` (lines 286-315)
-  - Added NaN handling in `write_to_dss()` after reprojection (lines 424-439)
+  - Added `from rasterio.enums import Resampling` import (line 410)
+  - Added `resampling=Resampling.average` to both reproject calls (lines 413, 423)
 
 ### Testing
-Tested with watershed geometries that trigger edge NaN values during reprojection. DSS files now successfully created for all storm events.
+Tested with watershed geometries that previously triggered NaN errors. DSS files now successfully created for all storm events with no NaN values.
 
 ### Future: Contributing Upstream
 
