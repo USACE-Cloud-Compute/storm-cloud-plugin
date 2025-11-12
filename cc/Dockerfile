@@ -1,9 +1,11 @@
 FROM amazonlinux:2023
 
-# Install Python 3.12
+# Install Python 3.12 and system dependencies
 RUN dnf install which -y
 RUN dnf -y install python3.12
 RUN dnf install python3.12-pip -y
+# Install GNU Fortran runtime library (required by libhecdss.so)
+RUN dnf install -y libgfortran
 RUN dnf clean all
 
 # Set WORKDIR
