@@ -19,7 +19,7 @@ COPY cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl ./cc/cc_py_sdk/cc_py_sdk-0.1.
 COPY cc/requirements.txt ./cc/requirements.txt
 
 # Copy HEC-DSS native library for Linux
-COPY cc/lib/libhecdss.so ./hec-dss-python/src/hecdss/lib/libhecdss.so
+COPY cc/hec-dss-lib/libhecdss.so ./hec-dss-python/src/hecdss/lib/libhecdss.so
 
 # Install Python packages
 WORKDIR /usr/src/app/cc
