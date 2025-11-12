@@ -12,6 +12,9 @@ WORKDIR /usr/src/app
 # Copy files to install Python packages
 COPY stormhub/pyproject.toml .
 COPY stormhub/stormhub ./stormhub
+COPY hec-dss-python/pyproject.toml ./hec-dss-python/pyproject.toml
+COPY hec-dss-python/setup.cfg ./hec-dss-python/setup.cfg
+COPY hec-dss-python/src ./hec-dss-python/src
 COPY cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl ./cc/cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl
 COPY cc/requirements.txt ./cc/requirements.txt
 
