@@ -1,10 +1,12 @@
 import json
 import logging
 import multiprocessing
+from datetime import datetime
 from pathlib import Path
 from cc.plugin_manager import PluginManager, DataSource, DataSourceOpInput
 from stormhub.logger import initialize_logger
 from stormhub.met.storm_catalog import new_catalog, new_collection
+from stormhub.met.zarr_to_dss import noaa_zarr_to_dss, NOAADataVariable
 
 # Initialize logger
 initialize_logger(level=logging.INFO)
@@ -122,6 +124,67 @@ class StormHubProcessor:
                 print(f"Uploading {file} -> {remote_path}")
                 self.plugin_manager.copy_file_to_remote(ds=op, localpath=str(file))
 
+    def convert_zarr_to_dss(self, collection):
+        """Convert NOAA Zarr data to DSS format for each storm in the collection."""
+        print("\n--- Converting Zarr to DSS ---")
+
+        # Create DSS output directory
+        dss_output_dir = Path(self.local_output_dir) / "dss"
+        dss_output_dir.mkdir(parents=True, exist_ok=True)
+
+        # Get the watershed geometry file path
+        watershed_filename = Path(self.payload.inputs[0].paths["watershed"]).name
+        aoi_geometry_path = f"{self.local_root_dir}/{watershed_filename}"
+
+        # Get storm duration from parameters
+        storm_duration = self.storm_params["storm_duration"]
+
+        # Iterate over all storm items in the collection
+        items = list(collection.get_all_items())
+        total_items = len(items)
+
+        print(f"Converting {total_items} storm events from Zarr to DSS format...")
+
+        for idx, item in enumerate(items, 1):
+            # Extract storm date from item
+            try:
+                # Try parsing as datetime first (format: "YYYY-MM-DDTHH")
+                storm_start = datetime.strptime(item.id, "%Y-%m-%dT%H")
+            except ValueError:
+                # If that fails, try using the item's datetime property
+                if item.datetime:
+                    storm_start = item.datetime
+                else:
+                    print(f"Warning: Could not parse datetime for item {item.id}, skipping...")
+                    continue
+
+            # Define output DSS file path
+            output_dss_path = str(dss_output_dir / f"{item.id}.dss")
+
+            print(f"[{idx}/{total_items}] Converting storm {item.id} to DSS format...")
+
+            try:
+                # Create variable-duration map (new API)
+                variable_duration_map = {
+                    NOAADataVariable.APCP: storm_duration,  # Precipitation for full duration
+                    NOAADataVariable.TMP: storm_duration    # Temperature for full duration
+                }
+
+                # Call noaa_zarr_to_dss with the new signature
+                noaa_zarr_to_dss(
+                    output_dss_path=output_dss_path,
+                    aoi_geometry_gpkg_path=aoi_geometry_path,
+                    aoi_name=self.catalog_id,
+                    storm_start=storm_start,
+                    variable_duration_map=variable_duration_map
+                )
+                print(f"  ✓ DSS file created: {output_dss_path}")
+            except Exception as e:
+                print(f"  ✗ Error converting {item.id}: {e}")
+                logging.error(f"Failed to convert {item.id} to DSS: {e}", exc_info=True)
+
+        print(f"\nDSS conversion complete. Files saved to: {dss_output_dir}")
+
     def process_storm_data(self):
         """Create and process a storm catalog using defined parameters."""
         # Use 'spawn' instead of 'fork' for stability across platforms/architectures
@@ -135,10 +198,11 @@ class StormHubProcessor:
         )
 
         # Generate and return a new storm collection using the provided parameters
-        return new_collection(catalog, **self.storm_params)
+        collection = new_collection(catalog, **self.storm_params)
+        return collection
 
     def run(self):
-        """Execute the full workflow: Download, Process, Upload."""
+        """Execute the full workflow: Download, Process, Convert to DSS, Upload."""
         try:
             print("\n--- Step 1: Downloading Files ---")
             self.download_files()
@@ -147,8 +211,11 @@ class StormHubProcessor:
             self.create_config_file()
 
             print("\n--- Step 3: Processing Storm Data ---")
-            self.process_storm_data()
+            collection = self.process_storm_data()
             print("StormHub Catalog and Collection created!")
+
+            print("\n--- Step 3.5: Converting Zarr to DSS ---")
+            self.convert_zarr_to_dss(collection)
 
             print("\n--- Step 4: Uploading Files ---")
             self.upload_files()
