@@ -1,6 +1,49 @@
-# StormHub Submodule Changes
+# Submodule Changes
 
-This document tracks changes made to the StormHub submodule that are pending upstream contribution.
+This document tracks changes made to submodules and branch requirements.
+
+---
+
+## hec-dss-python: Using `docs/message_levels` branch
+
+**Branch**: `docs/message_levels` (instead of `main`)
+**Commit**: ef39067
+**Status**: Required until merged to main
+
+### Why This Branch?
+The `main` branch of hec-dss-python does not handle NaN values in gridded data. When reprojecting meteorological grids (e.g., from 1km AORC to 4km SHG), NaN values can be introduced at grid edges due to CRS transformation artifacts.
+
+The `docs/message_levels` branch includes commit `aef5af0` ("Added support for numpy arrays with NaN values in GriddedData.create") which:
+- Uses `np.nanmax/nanmin/nanmean` instead of `np.max/min/mean`
+- Converts NaN to DSS null value (`-3.4028234663852886e+38`) before writing
+
+### Error Without This Fix
+```
+ValueError: cannot convert float NaN to integer
+  File "hec-dss-python/src/hecdss/gridded_data.py", line 112, in update_grid_info
+    bin_range = (int)(math.ceil(self.maxDataValue) - math.floor(self.minDataValue))
+```
+
+### To Update Submodule
+```bash
+cd hec-dss-python
+git checkout docs/message_levels
+git pull origin docs/message_levels
+```
+
+### When to Switch Back to Main
+Once the NaN fix is merged to `main` in the upstream hec-dss-python repository, update to main:
+```bash
+cd hec-dss-python
+git checkout main
+git pull origin main
+```
+
+---
+
+## StormHub Submodule Changes
+
+This section tracks changes made to the StormHub submodule that are pending upstream contribution.
 
 ## Fix: NaN values during reprojection in DSS creation
 
