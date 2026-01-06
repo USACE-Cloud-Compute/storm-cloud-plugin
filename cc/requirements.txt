@@ -1,0 +1,13 @@
+# Working Directory should be in `cc` when calling `pip install -r cc/requirements.txt`
+# StormHub (referencing 'pyproject.toml' in project root dir)
+-e ..
+# hec-dss-python (local submodule)
+-e ../hec-dss-python
+# CloudCompute
+./cc_py_sdk/cc_py_sdk-0.1.0-py3-none-any.whl
+# Temporary dependencies for CloudCompute
+dataclasses
+dataclasses-json
+numpy
+pandas
+boto3
