@@ -23,7 +23,7 @@ class StormHubProcessor:
         self.local_root_dir = "Local"  # Root directory for storing downloaded and processed files
 
         # Define cloud storage settings
-        self.output_store_name = "StormHubStore"  # Remote data source store name for output files
+        self.output_store_name = self.payload.outputs[0].store_name  # Remote data source store name for output files
         self.remote_base = self.payload.attributes["output_path"]  # Base remote directory for uploads
 
         # Extract catalog-specific information from the payload

@@ -33,6 +33,6 @@ services:
       mc mb --ignore-existing s3-minio/$$CC_AWS_S3_BUCKET &&
       mc mb --ignore-existing s3-minio/$$FFRD_AWS_S3_BUCKET &&
       mc put inputs/payload s3-minio/$$CC_AWS_S3_BUCKET/$$CC_ROOT/$$CC_PAYLOAD_ID/payload &&
-      mc put inputs/duwamish-transposition.geojson s3-minio/$$FFRD_AWS_S3_BUCKET/$$StormHub_INPUT_PATH/duwamish-transposition.geojson &&
-      mc put inputs/duwamish-watershed.geojson s3-minio/$$FFRD_AWS_S3_BUCKET/$$StormHub_INPUT_PATH/duwamish-watershed.geojson
+      mc put inputs/transposition-domain.geojson s3-minio/$$FFRD_AWS_S3_BUCKET/$$StormHub_INPUT_PATH/transposition-domain.geojson &&
+      mc put inputs/watershed-boundary.geojson s3-minio/$$FFRD_AWS_S3_BUCKET/$$StormHub_INPUT_PATH/watershed-boundary.geojson
       "
