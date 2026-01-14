@@ -1,38 +1,42 @@
 {
   "attributes": {
-	"catalog_id": "Storm Catalog",
-	"catalog_description": "Storm Catalog Description",
-	"start_date": "2022-12-01",
-	"end_date": "2022-12-31",
-	"storm_duration": 72,
-	"min_precip_threshold": 0,
-	"top_n_events": 10,
-	"check_every_n_hours": 10,
-	"specific_dates": [],
-	"input_path": "user-inputs/nvan/duwamish",
-	"output_path": "user-outputs/nvan/duwamish"
+    "catalog_description": "Storm Catalog Description",
+    "catalog_id": "data",
+    "check_every_n_hours": 12,
+    "end_date": "2022-12-01",
+    "input_path": "conformance/storm-catalog",
+    "min_precip_threshold": 0,
+    "output_path": "conformance/storm-catalog/generated-outputs",
+    "specific_dates": [],
+    "start_date": "2022-11-02",
+    "storm_duration": 72,
+    "top_n_events": 1
   },
   "stores": [
-	{
-	  "name": "StormHubStore",
-	  "store_type": "S3",
-	  "profile": "FFRD",
-	  "params": {
-		"root": "/model-library/stormhub-store"
-	  }
-	}
+    {
+      "name": "StormHubStore",
+      "store_type": "S3",
+      "profile": "FFRD",
+      "params": {
+        "root": "/model-library/ffrd-trinity"
+      }
+    }
   ],
   "inputs": [
-	{
-	  "name": "StormHubInputs",
-	  "paths": {
-		"watershed": "{ATTR::input_path}/duwamish-watershed.geojson",
-		"transposition": "{ATTR::input_path}/duwamish-transposition.geojson"
-	  },
-	  "data_paths": {},
-	  "store_name": "StormHubStore"
-	}
+    {
+      "name": "StormHubInputs",
+      "paths": {
+        "transposition": "{ATTR::input_path}/transposition-domain.geojson",
+        "watershed": "{ATTR::input_path}/watershed-boundary.geojson"
+      },
+      "store_name": "StormHubStore"
+    }
   ],
-  "outputs": [],
+  "outputs": [
+    {
+      "name": "StormHubOutputs",
+      "store_name": "StormHubStore"
+    }
+  ],
   "actions": []
 }
