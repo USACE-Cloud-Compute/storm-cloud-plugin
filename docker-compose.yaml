@@ -1,0 +1,74 @@
+# Local development infrastructure.
+# Usage: python run.py
+
+services:
+  minio:
+    image: minio/minio:latest
+    container_name: storm-cloud-plugin-minio
+    command: server /data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"   # Web console: ccuser/ccpassword
+    env_file: test/local.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  minio-init:
+    image: minio/mc:latest
+    depends_on:
+      minio:
+        condition: service_healthy
+    env_file: test/local.env
+    volumes:
+      - ./test:/inputs
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+
+      mc admin user add local $$CC_AWS_ACCESS_KEY_ID $$CC_AWS_SECRET_ACCESS_KEY &&
+      mc admin policy attach local readwrite --user $$CC_AWS_ACCESS_KEY_ID &&
+      mc admin user add local $$FFRD_AWS_ACCESS_KEY_ID $$FFRD_AWS_SECRET_ACCESS_KEY &&
+      mc admin policy attach local readwrite --user $$FFRD_AWS_ACCESS_KEY_ID &&
+
+      mc mb --ignore-existing local/$$CC_AWS_S3_BUCKET &&
+      mc mb --ignore-existing local/$$FFRD_AWS_S3_BUCKET &&
+
+      mc put /inputs/transposition-domain.geojson local/$$FFRD_AWS_S3_BUCKET/$$FFRD_STORE_ROOT/$$FFRD_INPUT_PATH/transposition-domain.geojson &&
+      mc put /inputs/watershed-boundary.geojson local/$$FFRD_AWS_S3_BUCKET/$$FFRD_STORE_ROOT/$$FFRD_INPUT_PATH/watershed-boundary.geojson &&
+
+      echo 'MinIO initialized.'
+      "
+
+  seed:
+    image: minio/mc:latest
+    depends_on:
+      minio-init:
+        condition: service_completed_successfully
+    env_file: test/local.env
+    volumes:
+      - ./test:/inputs
+    environment:
+      PAYLOAD_FILE: ${PAYLOAD_FILE:-/inputs/examples/payload.json}
+    entrypoint: >
+      /bin/sh -c "
+      mc alias set local http://minio:9000 $$MINIO_ROOT_USER $$MINIO_ROOT_PASSWORD &&
+      mc put $$PAYLOAD_FILE local/$$CC_AWS_S3_BUCKET/$$CC_ROOT/$$CC_PAYLOAD_ID/payload &&
+      echo 'Payload seeded.'
+      "
+
+  storm-cloud-plugin:
+    build: .
+    depends_on:
+      seed:
+        condition: service_completed_successfully
+    env_file: test/local.env
+    environment:
+      CC_AWS_ENDPOINT: http://minio:9000
+      FFRD_AWS_ENDPOINT: http://minio:9000
+    # Kill the container if it hangs (e.g. stormhub v0.5.0 deadlock).
+    # Override with: PLUGIN_TIMEOUT=7200 docker compose run ...
+    stop_grace_period: 10s
+    init: true

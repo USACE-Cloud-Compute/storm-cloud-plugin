@@ -1,0 +1,19 @@
+{
+  "name": "storm-cloud-plugin",
+  "image_and_tag": "ghcr.io/usace/storm-cloud-plugin:latest",
+  "description": "Creates storm catalogs from NOAA AORC precipitation data and converts to HEC-DSS files.",
+  "command": ["python3.12", "-u", "src/plugin.py"],
+  "compute_environment": [
+    { "resource_type": "vcpu", "value": "4" },
+    { "resource_type": "memory", "value": "8192" }
+  ],
+  "environment": {},
+  "credentials": {
+    "FFRD": {
+      "aws_access_key_id": "",
+      "aws_secret_access_key": "",
+      "aws_default_region": "us-east-1",
+      "aws_s3_bucket": ""
+    }
+  }
+}

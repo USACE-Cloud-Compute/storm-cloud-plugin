@@ -1,0 +1,6 @@
+*.tar
+*.so
+*.dll
+Local/
+__pycache__/
+*.pyc

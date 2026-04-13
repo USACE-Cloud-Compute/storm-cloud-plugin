@@ -1,26 +1,58 @@
-# StormHub with Cloud Compute
+# StormHub Cloud Plugin
 
-### 1. Pull submodules
-This command pull and update all submodules in this repository
-```bash
-git submodule update --init
+A [USACE Cloud Compute](https://github.com/USACE-Cloud-Compute/cloudcompute) plugin that creates storm catalogs from NOAA AORC precipitation data and converts them to HEC-DSS files.
+
+```
+S3 payload  -->  download-inputs  -->  process-storms  -->  convert-to-dss  -->  upload-outputs
 ```
 
-### 2. Run a quick test
-This command runs a quick test that spins up two Docker containers:
-* MinIO instance -- stores inputs and outputs
-* StormHub MinIO instance -- contains the environment to run the main script
+## Quick Start
 
-Need to attach to the StormHub MinIO container to run `python3.12 main.py` when the containers are ready.
+Requires **Python 3** and **Docker**.
+
 ```bash
-bash cc/scripts/quicktest.sh
+python run.py          # Builds image, starts MinIO, runs plugin (~2 min first run)
 ```
 
-### 3. Build/Save StormHub Cloud image
+Results at http://localhost:9001 (ccuser/ccpassword).
+
+## Custom Payloads
+
+Edit `test/examples/payload.json` or copy it and pass the path:
+
 ```bash
-# Build image
-bash cc/scripts/build-storm-cloud-plugin-image.sh
-# Save image
-bash cc/scripts/save-storm-cloud-plugin-image.sh
+cp test/examples/payload.json test/examples/mine.json
+python run.py test/examples/mine.json
 ```
 
+Storm parameters are in `attributes`. All values are strings (CC SDK convention).
+
+| Parameter | Required | Default | Description |
+|-----------|----------|---------|-------------|
+| `catalog_id` | yes | | Unique ID for this storm catalog |
+| `catalog_description` | yes | | Human-readable description for STAC metadata |
+| `start_date` | yes | | Start of analysis period (`YYYY-MM-DD`) |
+| `end_date` | no | `start_date` | End of analysis period (`YYYY-MM-DD`) |
+| `storm_duration` | no | `"72"` | Storm event duration in hours |
+| `top_n_events` | no | `"10"` | Number of top storms to keep |
+| `min_precip_threshold` | no | `"0.0"` | Minimum mean precipitation (mm) |
+| `check_every_n_hours` | no | `"24"` | How often to sample storm start times |
+| `specific_dates` | no | | JSON array of dates to force-include |
+| `input_path` | yes | | S3 path to watershed/transposition geometries |
+| `output_path` | yes | | S3 path for results |
+
+## Dev Tasks
+
+```bash
+python run.py build     # Init submodule + build Docker image
+python run.py package   # Build image and save as storm-cloud-plugin.tar
+python run.py lint      # Ruff linter + format check
+python run.py format    # Auto-format with ruff
+python run.py freeze    # Regenerate constraints.txt
+python run.py clean     # Remove containers, volumes, Local/
+python run.py down      # Stop containers
+```
+
+## Known Limitations
+
+- **stormhub v0.5.0**: Workers hang during storm collection. Pinned to v0.4.0.

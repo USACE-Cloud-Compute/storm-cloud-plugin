@@ -1,0 +1,14 @@
+.git
+.github
+*.tar
+Local/
+test/
+__pycache__/
+*.pyc
+*.egg-info/
+*.so
+*.dll
+*.md
+docker-compose.yaml
+manifest.example.json
+run.py

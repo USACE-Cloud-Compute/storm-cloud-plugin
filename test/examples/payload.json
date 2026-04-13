@@ -1,0 +1,45 @@
+{
+  "attributes": {
+    "catalog_id": "quick-test",
+    "catalog_description": "Quick test — 1 month, 1 storm event",
+    "start_date": "2022-11-02",
+    "end_date": "2022-12-01",
+    "storm_duration": "72",
+    "top_n_events": "1",
+    "min_precip_threshold": "0",
+    "check_every_n_hours": "12",
+    "input_path": "conformance/storm-catalog",
+    "output_path": "conformance/storm-catalog/generated-outputs"
+  },
+  "stores": [
+    {
+      "name": "StormHubStore",
+      "store_type": "S3",
+      "profile": "FFRD",
+      "params": { "root": "/model-library/ffrd-trinity" }
+    }
+  ],
+  "inputs": [
+    {
+      "name": "StormHubInputs",
+      "paths": {
+        "transposition": "{ATTR::input_path}/transposition-domain.geojson",
+        "watershed": "{ATTR::input_path}/watershed-boundary.geojson"
+      },
+      "store_name": "StormHubStore"
+    }
+  ],
+  "outputs": [
+    {
+      "name": "StormHubOutputs",
+      "paths": { "root": "{ATTR::output_path}" },
+      "store_name": "StormHubStore"
+    }
+  ],
+  "actions": [
+    { "name": "download-inputs", "type": "utils", "description": "Download geometries", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
+    { "name": "process-storms", "type": "run", "description": "Create STAC storm catalog", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
+    { "name": "convert-to-dss", "type": "extract", "description": "Convert Zarr to HEC-DSS", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
+    { "name": "upload-outputs", "type": "utils", "description": "Upload results", "attributes": {}, "stores": [], "inputs": [], "outputs": [] }
+  ]
+}
