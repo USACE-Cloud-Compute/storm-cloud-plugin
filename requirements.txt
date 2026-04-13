@@ -1,0 +1,11 @@
+# StormHub library (submodule)
+-e ./lib/stormhub
+# Cloud Compute Python SDK (from GitHub release)
+# sha256 from: pip hash cc_py_sdk-1.1.0-py3-none-any.whl
+cc_py_sdk @ https://github.com/USACE-Cloud-Compute/cc-py-sdk/releases/download/v1.1.0/cc_py_sdk-1.1.0-py3-none-any.whl#sha256=cea82a3b3b3e572d4fbaf884f073a3152f56654496c737eef599dcbdbf0da6b1
+# PyPI dependencies
+hecdss>=0.1.25
+dataclasses-json>=0.5.7,<1.0
+numpy>=1.24,<3.0
+pandas>=2.0,<3.0
+boto3>=1.26,<2.0
