@@ -1,6 +1,4 @@
-[submodule "stormhub"]
-	path = stormhub
+[submodule "lib/stormhub"]
+	path = lib/stormhub
 	url = https://github.com/Dewberry/stormhub.git
-[submodule "hec-dss-python"]
-	path = hec-dss-python
-	url = https://github.com/Dewberry/hec-dss-python.git
+	branch = v0.4.0
