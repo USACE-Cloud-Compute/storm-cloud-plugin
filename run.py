@@ -30,6 +30,16 @@ def cmd_build() -> None:
     run_cmd(["docker", "compose", "build", "storm-cloud-plugin"])
 
 
+def cmd_package() -> None:
+    """Build Docker image and save as stormhub-cloud.tar."""
+    cmd_build()
+    image = "ghcr.io/usace/storm-cloud-plugin:latest"
+    out = SCRIPT_DIR / "storm-cloud-plugin.tar"
+    print(f"Saving {image} -> {out}")
+    run_cmd(["docker", "save", "-o", str(out), image])
+    print(f"Done: {out} ({out.stat().st_size // 1024 // 1024} MB)")
+
+
 def cmd_lint() -> None:
     """Ruff linter + format check."""
     run_cmd(["ruff", "check", "src/"])
@@ -99,6 +109,7 @@ def cmd_run(payload_file: str) -> None:
 
 TASK_COMMANDS = {
     "build": cmd_build,
+    "package": cmd_package,
     "lint": cmd_lint,
     "format": cmd_format,
     "freeze": cmd_freeze,

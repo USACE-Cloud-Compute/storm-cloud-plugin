@@ -45,6 +45,7 @@ Storm parameters are in `attributes`. All values are strings (CC SDK convention)
 
 ```bash
 python run.py build     # Init submodule + build Docker image
+python run.py package   # Build image and save as storm-cloud-plugin.tar
 python run.py lint      # Ruff linter + format check
 python run.py format    # Auto-format with ruff
 python run.py freeze    # Regenerate constraints.txt
