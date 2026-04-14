@@ -5,10 +5,13 @@ from __future__ import annotations
 import json
 import logging
 import os
+from concurrent.futures.process import BrokenProcessPool
 from pathlib import Path
 from typing import Any
 
 from stormhub.met.storm_catalog import StormCatalog, new_catalog, new_collection
+
+from worker_sizing import resolve_num_workers
 
 log = logging.getLogger(__name__)
 
@@ -65,6 +68,7 @@ def process_storms(ctx: dict[str, Any], action: Any) -> None:
         "min_precip_threshold": float(attrs.get("min_precip_threshold", "0.0")),
         "top_n_events": int(attrs.get("top_n_events", "10")),
         "check_every_n_hours": int(attrs.get("check_every_n_hours", "24")),
+        "num_workers": resolve_num_workers(attrs),
         "specific_dates": json.loads(attrs["specific_dates"])
         if attrs.get("specific_dates")
         else [],
@@ -83,11 +87,16 @@ def process_storms(ctx: dict[str, Any], action: Any) -> None:
             catalog_description=attrs["catalog_description"],
         )
 
-        collection = new_collection(catalog, **storm_params)
-        if collection is None:
+        try:
+            collection = new_collection(catalog, **storm_params)
+        except BrokenProcessPool as e:
             raise RuntimeError(
-                "new_collection returned None — no storms found matching criteria"
-            )
+                f"Storm processing pool died with num_workers="
+                f"{storm_params['num_workers']} (likely OOM). Lower via "
+                "'num_workers' payload attribute or CC_NUM_WORKERS env."
+            ) from e
+        if collection is None:
+            raise RuntimeError("no storms found matching criteria")
 
     log.info("Catalog and collection ready")
 
