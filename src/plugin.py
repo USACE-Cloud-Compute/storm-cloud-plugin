@@ -23,6 +23,7 @@ from stormhub.logger import initialize_logger
 from actions.download_inputs import download_inputs
 from actions.process_storms import process_storms
 from actions.convert_to_dss import convert_to_dss
+from actions.create_grid_file import create_grid_file
 from actions.upload_outputs import upload_outputs
 
 
@@ -81,6 +82,7 @@ ACTION_DISPATCH = {
     "download-inputs": download_inputs,
     "process-storms": process_storms,
     "convert-to-dss": convert_to_dss,
+    "create-grid-file": create_grid_file,
     "upload-outputs": upload_outputs,
 }
 

@@ -40,6 +40,7 @@
     { "name": "download-inputs", "type": "utils", "description": "Download geometries", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
     { "name": "process-storms", "type": "run", "description": "Create STAC storm catalog", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
     { "name": "convert-to-dss", "type": "extract", "description": "Convert Zarr to HEC-DSS", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
+    { "name": "create-grid-file", "type": "run", "description": "Emit HEC-HMS Grid Manager file", "attributes": {}, "stores": [], "inputs": [], "outputs": [] },
     { "name": "upload-outputs", "type": "utils", "description": "Upload results", "attributes": {}, "stores": [], "inputs": [], "outputs": [] }
   ]
 }

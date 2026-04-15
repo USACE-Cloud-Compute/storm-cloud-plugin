@@ -60,6 +60,7 @@ services:
       "
 
   storm-cloud-plugin:
+    image: storm-cloud-plugin:latest
     build: .
     depends_on:
       seed:

@@ -27,5 +27,13 @@ COPY src src
 RUN chown -R stormhub:stormhub /usr/src/app
 USER stormhub
 
+# Cap intra-process thread fan-out so worker memory scales with worker count
+# only, not num_workers × cpu_count. See src/worker_sizing.py for context.
+ENV DASK_SCHEDULER=synchronous \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1
+
 ENTRYPOINT ["python3.12", "-u"]
 CMD ["src/plugin.py"]
