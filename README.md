@@ -3,7 +3,7 @@
 A [USACE Cloud Compute](https://github.com/USACE-Cloud-Compute/cloudcompute) plugin that creates storm catalogs from NOAA AORC precipitation data and converts them to HEC-DSS files.
 
 ```
-S3 payload  -->  download-inputs  -->  process-storms  -->  convert-to-dss  -->  upload-outputs
+S3 payload  -->  download-inputs  -->  process-storms  -->  convert-to-dss  -->  create-grid-file  -->  upload-outputs
 ```
 
 ## Quick Start
@@ -72,9 +72,14 @@ docker compose -f docker-compose.yaml -f docker-compose.mem-limit.yaml run --rm 
 docker compose -f docker-compose.yaml -f docker-compose.mem-limit.yaml run --rm storm-cloud-plugin
 ```
 
-With the fix, the resolver reads the cgroup limit and picks 1 worker;
-without it, the library would pick 6 and `BrokenProcessPool`.
+With the fix, the resolver reads the cgroup limit and picks a safe worker
+count; without it, the library would pick 6 and `BrokenProcessPool`.
+
+**Re-run this repro after bumping the `lib/stormhub` submodule** — it's
+the regression test for both the worker-count heuristic and the
+thread-cap env vars in the Dockerfile.
 
 ## Known Limitations
 
 - **stormhub v0.5.0**: Workers hang during storm collection. Pinned to v0.4.0.
+- **stormhub thread fan-out**: `num_workers` only caps the *process* pool. Each worker still appears to fan out internally (likely via dask's threaded scheduler in the AORC loader and/or BLAS threads), so peak RSS scales with the container's visible vCPU count even at `num_workers=1`. **Workaround:** in addition to setting `num_workers=1` (payload attribute or `CC_NUM_WORKERS=1`), cap the container's CPU allocation so intra-worker threads can't fan out past what the memory budget tolerates. For a 15 GB cap, `cpus: "4"` (Docker Compose `deploy.resources.limits` or `--cpus 4` on `docker run`) has held under the limit in our runs. Tighten further if OOMs reappear.

@@ -42,11 +42,13 @@ def test_empty_attribute_falls_through(no_cgroup):
 
 def test_auto_sizes_from_cgroup(monkeypatch):
     monkeypatch.setattr(worker_sizing, "_cgroup_mem_limit_mb", lambda: 15000)
-    assert worker_sizing.resolve_num_workers({}) == 7  # 15000 // 2048
+    # 15000 // 3072 == 4 — with thread caps in the image, workers fit
+    # memory only, independent of visible CPU count.
+    assert worker_sizing.resolve_num_workers({}) == 4
 
 
 def test_auto_floors_at_one_when_budget_below_per_worker(monkeypatch):
-    monkeypatch.setattr(worker_sizing, "_cgroup_mem_limit_mb", lambda: 512)
+    monkeypatch.setattr(worker_sizing, "_cgroup_mem_limit_mb", lambda: 2048)
     assert worker_sizing.resolve_num_workers({}) == 1
 
 

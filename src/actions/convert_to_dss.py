@@ -62,7 +62,7 @@ def convert_to_dss(ctx: dict[str, Any], action: Any) -> None:
     attrs = payload.attributes
     catalog_id = attrs["catalog_id"]
     output_dir = local_root / catalog_id
-    dss_dir = output_dir / "dss"
+    dss_dir = output_dir / "data"
     dss_dir.mkdir(parents=True, exist_ok=True)
 
     watershed_file = str(local_root / Path(payload.inputs[0].paths["watershed"]).name)

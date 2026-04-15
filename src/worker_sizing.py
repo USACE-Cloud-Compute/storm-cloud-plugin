@@ -4,6 +4,11 @@ The vendored stormhub library defaults to ``os.cpu_count() - 2`` workers,
 which inside a container reads the *host* CPU count and can exceed the
 cgroup memory ceiling — causing OOM-driven ``BrokenProcessPool``. This
 module picks a safe count from the cgroup limit, with operator overrides.
+
+Assumes each worker runs single-threaded: dask's synchronous scheduler
+and ``*_NUM_THREADS=1`` are set in the image (see Dockerfile). Without
+those, per-worker RSS would also scale with visible vCPU count and this
+heuristic would under-count memory pressure.
 """
 
 from __future__ import annotations
@@ -14,9 +19,10 @@ from pathlib import Path
 
 log = logging.getLogger(__name__)
 
-# Per-worker memory budget: observed ~1–1.5 GB on trinity + 72 hr AORC;
-# 2 GB absorbs transient spikes.
-PER_WORKER_MB = 2048
+# Per-worker memory budget. With threads capped at 1, observed ~1.5 GB on
+# a 72 hr AORC slice; 3 GB absorbs transient spikes and unmeasured headroom
+# for larger domains.
+PER_WORKER_MB = 3072
 
 CGROUP_MEM_MAX = "/sys/fs/cgroup/memory.max"
 
