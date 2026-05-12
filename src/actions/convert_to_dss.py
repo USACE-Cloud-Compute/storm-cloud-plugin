@@ -25,7 +25,7 @@ def _parse_storm_datetime(item: Any) -> Optional[datetime]:
 
 def _convert_single_storm(
     output_path: str,
-    watershed_file: str,
+    transposition_file: str,
     catalog_id: str,
     storm_start_iso: str,
     storm_duration: int,
@@ -40,7 +40,7 @@ def _convert_single_storm(
     try:
         noaa_zarr_to_dss(
             output_dss_path=output_path,
-            aoi_geometry_gpkg_path=watershed_file,
+            aoi_geometry_gpkg_path=transposition_file,
             aoi_name=catalog_id,
             storm_start=storm_start,
             variable_duration_map={
@@ -65,7 +65,9 @@ def convert_to_dss(ctx: dict[str, Any], action: Any) -> None:
     dss_dir = output_dir / "data"
     dss_dir.mkdir(parents=True, exist_ok=True)
 
-    watershed_file = str(local_root / Path(payload.inputs[0].paths["watershed"]).name)
+    transposition_file = str(
+        local_root / Path(payload.inputs[0].paths["transposition"]).name
+    )
     storm_duration = storm_params["storm_duration"]
 
     items = list(collection.get_all_items())
@@ -115,7 +117,7 @@ def convert_to_dss(ctx: dict[str, Any], action: Any) -> None:
                 pool.submit(
                     _convert_single_storm,
                     out_path,
-                    watershed_file,
+                    transposition_file,
                     catalog_id,
                     start_iso,
                     storm_duration,
