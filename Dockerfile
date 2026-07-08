@@ -1,7 +1,8 @@
 FROM amazonlinux:2023
 
 RUN dnf install -y --setopt=install_weak_deps=False \
-        python3.12 python3.12-pip libgfortran shadow-utils && \
+        python3.12 python3.12-pip libgfortran ca-certificates shadow-utils && \
+    update-ca-trust && \
     useradd -m -u 1000 stormhub && \
     dnf remove -y shadow-utils && \
     dnf clean all && rm -rf /var/cache/dnf
