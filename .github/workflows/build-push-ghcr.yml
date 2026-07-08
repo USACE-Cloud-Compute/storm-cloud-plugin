@@ -30,6 +30,10 @@ jobs:
 
   build:
     name: Build per-arch
+    # Runs on every event, incl. PRs, so a PR proves the image still builds.
+    # But it only LOGS IN and PUBLISHES on a release (see the login and build
+    # steps below) — PRs and push-to-main build for validation/cache only and
+    # never touch the registry.
     needs: lint
     strategy:
       fail-fast: false
@@ -48,6 +52,9 @@ jobs:
       - uses: docker/setup-buildx-action@v3
 
       - name: Login to GHCR
+        # Only authenticate when we actually publish. PRs and push-to-main
+        # build for validation/cache only and never touch the registry.
+        if: github.event_name == 'release'
         uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
@@ -77,12 +84,13 @@ jobs:
             type=raw,value=latest,enable=${{ github.event_name == 'release' }}
             type=sha,format=long,prefix=,suffix=-${{ matrix.suffix }}
 
-      - name: Build & push single-arch image
+      - name: Build image (publish on release only)
         uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile
           platforms: ${{ matrix.platforms }}
+          # Publish to GHCR only on a release; push-to-main builds for validation/cache.
           push: ${{ github.event_name == 'release' }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
