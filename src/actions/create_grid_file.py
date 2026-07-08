@@ -20,6 +20,8 @@ from typing import Any, Iterable
 
 from pyproj import Transformer
 
+from actions import dss_filename, parse_storm_datetime, storm_rank
+
 log = logging.getLogger(__name__)
 
 INDENT = "     "  # 5 spaces, matches HMS GridManagerWriter.LARGE_INDENT
@@ -49,14 +51,6 @@ _ALBERS_CRS_WKT = (
     'CS[Cartesian,2],AXIS["(E)",east,ORDER[1],LENGTHUNIT["US survey foot",0.304800609601219,ID["EPSG",9003]]],'
     'AXIS["(N)",north,ORDER[2],LENGTHUNIT["US survey foot",0.304800609601219,ID["EPSG",9003]]]]'
 )
-
-
-def _parse_storm_datetime(item: Any) -> datetime | None:
-    """Replicates convert_to_dss._parse_storm_datetime to pair items with DSS files."""
-    try:
-        return datetime.strptime(item.id, "%Y-%m-%dT%H")
-    except ValueError:
-        return item.datetime if getattr(item, "datetime", None) else None
 
 
 def _centroid_lonlat(item: Any) -> tuple[float, float] | None:
@@ -221,19 +215,17 @@ def create_grid_file(ctx: dict[str, Any], action: Any) -> None:
     failed: list[str] = []
 
     for idx, item in enumerate(items, start=1):
-        storm_start = _parse_storm_datetime(item)
+        storm_start = parse_storm_datetime(item)
         if storm_start is None:
             log.warning("Skipping item %s: unparseable datetime", item.id)
             failed.append(item.id)
             continue
 
-        date_str = storm_start.strftime("%Y%m%d")
-        rank_padded = str(idx).zfill(3)
-        dss_filename = f"{date_str}_{storm_duration}hr_st1_r{rank_padded}.dss"
-        dss_path = dss_dir / dss_filename
+        filename = dss_filename(storm_start, storm_rank(item, idx), storm_duration)
+        dss_path = dss_dir / filename
 
         if not dss_path.exists():
-            log.warning("Skipping %s: %s not found", item.id, dss_filename)
+            log.warning("Skipping %s: %s not found", item.id, filename)
             failed.append(item.id)
             continue
 
@@ -255,8 +247,8 @@ def create_grid_file(ctx: dict[str, Any], action: Any) -> None:
                 "No centroid for %s — emitting grid without Storm Center", item.id
             )
 
-        grid_base = dss_filename[:-4]  # drop ".dss"
-        rel_dss = f"data/{dss_filename}"
+        grid_base = filename[:-4]  # drop ".dss"
+        rel_dss = f"data/{filename}"
 
         if precip_pn is not None:
             entries.append(
