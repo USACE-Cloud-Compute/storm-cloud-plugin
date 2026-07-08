@@ -9,18 +9,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
 
+from actions import dss_filename, parse_storm_datetime, storm_rank
+
 log = logging.getLogger(__name__)
 
 # If every storm fails, that's an error. Allow up to this fraction to fail.
 MAX_FAILURE_RATIO = float(os.environ.get("DSS_MAX_FAILURE_RATIO", "0.5"))
 DSS_WORKERS = int(os.environ.get("DSS_WORKERS", "0"))  # 0 = auto (cpu_count)
-
-
-def _parse_storm_datetime(item: Any) -> Optional[datetime]:
-    try:
-        return datetime.strptime(item.id, "%Y-%m-%dT%H")
-    except ValueError:
-        return item.datetime if item.datetime else None
 
 
 def _convert_single_storm(
@@ -80,16 +75,14 @@ def convert_to_dss(ctx: dict[str, Any], action: Any) -> None:
     work: list[tuple[str, str, str]] = []  # (item_id, output_path, storm_start_iso)
     skipped: list[str] = []
     for idx, item in enumerate(items, 1):
-        storm_start = _parse_storm_datetime(item)
+        storm_start = parse_storm_datetime(item)
         if storm_start is None:
             log.warning("Skipping item %s: could not parse datetime", item.id)
             skipped.append(item.id)
             continue
 
-        date_str = storm_start.strftime("%Y%m%d")
-        rank_padded = str(idx).zfill(3)
-        dss_filename = f"{date_str}_{storm_duration}hr_st1_r{rank_padded}.dss"
-        output_path = str(dss_dir / dss_filename)
+        filename = dss_filename(storm_start, storm_rank(item, idx), storm_duration)
+        output_path = str(dss_dir / filename)
 
         # Idempotency: skip if DSS file already exists
         if Path(output_path).exists():
