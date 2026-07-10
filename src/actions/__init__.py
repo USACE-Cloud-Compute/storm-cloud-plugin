@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Any
 
 
@@ -11,13 +11,22 @@ def parse_storm_datetime(item: Any) -> datetime | None:
 
     Older catalogs use a ``%Y-%m-%dT%H`` item id; newer ones use the por_rank as
     the id and carry the datetime on ``item.datetime``.
+
+    Always returns a tz-naive UTC datetime. pystac's ``item.datetime`` is
+    tz-aware (UTC), but AORC's zarr ``time`` coordinate is tz-naive; slicing the
+    dataset with a tz-aware bound raises "Cannot compare tz-naive and tz-aware
+    datetime-like objects" in convert-to-dss. Normalizing here keeps the return
+    type consistent with the ``strptime`` branch and with the AORC data.
     """
     try:
         return datetime.strptime(item.id, "%Y-%m-%dT%H")
     except (TypeError, ValueError):
         # ValueError: id is a por_rank (e.g. "441"), not a datetime.
         # TypeError: id is None. Both fall through to item.datetime.
-        return item.datetime if getattr(item, "datetime", None) else None
+        dt = item.datetime if getattr(item, "datetime", None) else None
+        if dt is not None and dt.tzinfo is not None:
+            dt = dt.astimezone(timezone.utc).replace(tzinfo=None)
+        return dt
 
 
 def storm_rank(item: Any, fallback: int) -> int:

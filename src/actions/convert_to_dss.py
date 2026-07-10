@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import multiprocessing
 import os
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from datetime import datetime
@@ -16,6 +17,9 @@ log = logging.getLogger(__name__)
 # If every storm fails, that's an error. Allow up to this fraction to fail.
 MAX_FAILURE_RATIO = float(os.environ.get("DSS_MAX_FAILURE_RATIO", "0.5"))
 DSS_WORKERS = int(os.environ.get("DSS_WORKERS", "0"))  # 0 = auto (cpu_count)
+# HEC SHG output grid resolution for the DSS grids; AORC → SHG 4 km is standard.
+# stormhub 0.5.0's noaa_zarr_to_dss requires this explicitly (no default upstream).
+DSS_OUTPUT_RESOLUTION_KM = int(os.environ.get("DSS_OUTPUT_RESOLUTION_KM", "4"))
 
 
 def _convert_single_storm(
@@ -42,6 +46,7 @@ def _convert_single_storm(
                 NOAADataVariable.APCP: storm_duration,
                 NOAADataVariable.TMP: storm_duration,
             },
+            output_resolution_km=DSS_OUTPUT_RESOLUTION_KM,
         )
         return None
     except Exception as e:
@@ -105,7 +110,12 @@ def convert_to_dss(ctx: dict[str, Any], action: Any) -> None:
         )
         log.info("Running %d conversions with %d workers", len(work), workers)
 
-        with ProcessPoolExecutor(max_workers=workers) as pool:
+        # Explicit spawn context: the worker's first act is an fsspec/s3fs AORC
+        # read, which deadlocks in a *forked* worker (fork doesn't duplicate
+        # fsspec's async event-loop thread). Don't rely on the global default.
+        with ProcessPoolExecutor(
+            max_workers=workers, mp_context=multiprocessing.get_context("spawn")
+        ) as pool:
             futures = {
                 pool.submit(
                     _convert_single_storm,
