@@ -5,6 +5,11 @@ Initializes the PluginManager, validates the payload, and dispatches actions.
 
 from __future__ import annotations
 
+# Map any Cloud Compute AORC mirror credentials onto the AORC_S3_* env vars
+# stormhub reads. Import first: it runs on import and AORC_S3_BASE_URL must be
+# set before stormhub is imported below.
+import aorc_env  # noqa: F401
+
 import logging
 import logging.config
 import multiprocessing
@@ -61,10 +66,15 @@ def _configure_logging() -> None:
 _configure_logging()
 log = logging.getLogger(__name__)
 
-try:
-    multiprocessing.set_start_method("spawn")
-except RuntimeError:
-    pass
+# Force spawn as the multiprocessing default. The action imports above touch
+# multiprocessing during import, which fixes the start method to "fork" before
+# this line runs — so a plain set_start_method("spawn") raises "context has
+# already been set" and (when swallowed) leaves the default at fork. Any
+# default-context ProcessPoolExecutor then FORKs, and forked workers deadlock on
+# their first fsspec/s3fs read because fork doesn't duplicate fsspec's async
+# event-loop thread. force=True makes spawn the effective default; ValueError
+# (spawn unavailable) would be a genuine platform problem, so let it surface.
+multiprocessing.set_start_method("spawn", force=True)
 
 
 class ExitCode(IntEnum):

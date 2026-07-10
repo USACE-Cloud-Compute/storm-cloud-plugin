@@ -14,6 +14,14 @@
       "aws_secret_access_key": "",
       "aws_default_region": "us-east-1",
       "aws_s3_bucket": ""
+    },
+    "AORC": {
+      "_comment": "OPTIONAL. Provide to read AORC from a private/regional S3 mirror (faster); omit for the anonymous NOAA public bucket. src/aorc_env.py maps these AORC_AWS_* creds to the AORC_S3_* names stormhub reads and derives s3://<aws_s3_bucket> (set AORC_S3_PREFIX in environment if the year zarrs live under a bucket prefix).",
+      "aws_access_key_id": "",
+      "aws_secret_access_key": "",
+      "aws_default_region": "us-east-1",
+      "aws_endpoint": "",
+      "aws_s3_bucket": ""
     }
   }
 }
