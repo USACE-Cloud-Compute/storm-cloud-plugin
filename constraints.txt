@@ -2,7 +2,7 @@
 # Pins stormhub's transitive dependencies and direct deps to known-good versions.
 # Regenerate: python run.py freeze
 
-# --- stormhub pinned deps (from lib/stormhub/pyproject.toml v0.4.0) ---
+# --- stormhub pinned deps (from lib/stormhub/pyproject.toml, nghiemv fork @ main / v0.5.0) ---
 fiona==1.9.6
 geopandas==1.0.1
 matplotlib==3.9.0
@@ -18,9 +18,12 @@ dask==2025.1.0
 numcodecs==0.13.1
 scipy==1.15.2
 dataretrieval==1.0.11
+stac-geoparquet==0.7.0
 
 # --- direct plugin deps (from requirements.txt) ---
-hecdss==0.1.25
+# hecdss bumped 0.1.25 -> 0.1.29: stormhub 0.5.0 pins hecdss==0.1.29, which would
+# otherwise conflict with the old 0.1.25 constraint at install time.
+hecdss==0.1.29
 dataclasses-json==0.5.14
 numpy==1.26.4
 pandas==2.2.3
