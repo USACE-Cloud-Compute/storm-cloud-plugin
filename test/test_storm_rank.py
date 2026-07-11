@@ -10,7 +10,7 @@ accumulate orphan duplicates.
 from __future__ import annotations
 
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 SRC = Path(__file__).resolve().parent.parent / "src"
@@ -58,9 +58,22 @@ def test_parse_datetime_from_item_datetime_for_rank_id():
 def test_parse_datetime_none_id_does_not_raise():
     # A None id makes strptime raise TypeError, not ValueError; parse must
     # tolerate it and fall through to item.datetime rather than crash the loop.
+    # tz-aware item.datetime is normalized to tz-naive UTC (see below).
     dt = datetime(1982, 6, 7, 6, tzinfo=timezone.utc)
-    assert parse_storm_datetime(_Item(None, dt=dt)) == dt
+    result = parse_storm_datetime(_Item(None, dt=dt))
+    assert result == datetime(1982, 6, 7, 6)
+    assert result.tzinfo is None
     assert parse_storm_datetime(_Item(None)) is None
+
+
+def test_parse_datetime_returns_tz_naive_utc():
+    # pystac item.datetime is tz-aware; AORC's zarr time coord is tz-naive, so a
+    # tz-aware bound raises "Cannot compare tz-naive and tz-aware ..." when
+    # slicing in convert-to-dss. parse_storm_datetime must return tz-naive UTC.
+    dt = datetime(1982, 6, 7, 6, tzinfo=timezone(timedelta(hours=5)))  # 06:00+05:00
+    result = parse_storm_datetime(_Item("441", dt=dt))
+    assert result == datetime(1982, 6, 7, 1)  # 01:00 UTC, naive
+    assert result.tzinfo is None
 
 
 def test_producers_derive_identical_filenames():

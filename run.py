@@ -100,11 +100,13 @@ def cmd_run(payload_file: str) -> None:
     container_path = "/inputs/" + payload_file.replace("\\", "/").split("test/", 1)[-1]
 
     print(f"Running: {payload_file}\n")
-    run_cmd(
-        ["docker", "compose", "run", "--rm", "seed"],
-        env={"PAYLOAD_FILE": container_path},
-    )
-    run_cmd(["docker", "compose", "run", "--rm", "storm-cloud-plugin"])
+    # PAYLOAD_FILE must be set on BOTH runs. The plugin service depends_on the
+    # `seed` service, and because `seed` is `run --rm` (removed after it exits),
+    # `run storm-cloud-plugin` re-runs it — re-seeding with the default payload
+    # and silently overwriting the custom one unless PAYLOAD_FILE is set here too.
+    seed_env = {"PAYLOAD_FILE": container_path}
+    run_cmd(["docker", "compose", "run", "--rm", "seed"], env=seed_env)
+    run_cmd(["docker", "compose", "run", "--rm", "storm-cloud-plugin"], env=seed_env)
 
 
 TASK_COMMANDS = {

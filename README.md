@@ -47,6 +47,16 @@ Storm parameters are in `attributes`. All values are strings (CC SDK convention)
 | `input_path` | yes | | S3 path to watershed/transposition geometries |
 | `output_path` | yes | | S3 path for results |
 
+## AORC Data Source
+
+By default the plugin reads AORC from the anonymous **NOAA public bucket** — no
+credentials needed. To read from a faster **private/regional S3 mirror**, add an
+optional `AORC` credentials profile to the manifest (see `manifest.example.json`);
+`src/aorc_env.py` maps it onto the `AORC_S3_*` env vars stormhub reads and derives
+`s3://<bucket>` (set `AORC_S3_PREFIX` if the yearly `*.zarr` stores are nested).
+Omit the profile to use NOAA public. For local testing, fill in the commented
+`AORC_AWS_*` block in `test/local.env`.
+
 ## Dev Tasks
 
 ```bash
@@ -81,5 +91,5 @@ thread-cap env vars in the Dockerfile.
 
 ## Known Limitations
 
-- **stormhub v0.5.0**: Workers hang during storm collection. Pinned to v0.4.0.
+- **stormhub v0.5.0 worker hang (resolved):** stock v0.5.0 workers hang during storm collection — forked pool workers deadlock on their first S3 read (fork doesn't duplicate fsspec's async event-loop thread). The `lib/stormhub` fork fixes this with a `spawn` process context, which is what lets this plugin run on the 0.5.0 line.
 - **stormhub thread fan-out**: `num_workers` only caps the *process* pool. Each worker still appears to fan out internally (likely via dask's threaded scheduler in the AORC loader and/or BLAS threads), so peak RSS scales with the container's visible vCPU count even at `num_workers=1`. **Workaround:** in addition to setting `num_workers=1` (payload attribute or `CC_NUM_WORKERS=1`), cap the container's CPU allocation so intra-worker threads can't fan out past what the memory budget tolerates. For a 15 GB cap, `cpus: "4"` (Docker Compose `deploy.resources.limits` or `--cpus 4` on `docker run`) has held under the limit in our runs. Tighten further if OOMs reappear.
