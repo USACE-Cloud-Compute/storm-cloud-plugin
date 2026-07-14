@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Any, Optional
 
 from actions import dss_filename, parse_storm_datetime, storm_rank
+from worker_sizing import resolve_num_workers
 
 log = logging.getLogger(__name__)
 
@@ -105,9 +106,17 @@ def convert_to_dss(ctx: dict[str, Any], action: Any) -> None:
     failed: list[str] = list(skipped)
 
     if work:
-        workers = (
-            DSS_WORKERS if DSS_WORKERS > 0 else min(len(work), os.cpu_count() or 1)
-        )
+        # Size the pool from the cgroup memory budget, not os.cpu_count(): inside
+        # a container cpu_count() reports the *host* CPU count, so the old
+        # fallback spawned 8 rio.reproject workers on an 8-core node and blew the
+        # 12000Mi cgroup in seconds (OOMKill, exit 137). resolve_num_workers is
+        # the same memory-aware sizing process-storms already trusts, and it
+        # honors the num_workers payload attr / CC_NUM_WORKERS env. DSS_WORKERS
+        # remains an explicit override for a fatter host.
+        if DSS_WORKERS > 0:
+            workers = DSS_WORKERS
+        else:
+            workers = min(len(work), resolve_num_workers(attrs))
         log.info("Running %d conversions with %d workers", len(work), workers)
 
         # Explicit spawn context: the worker's first act is an fsspec/s3fs AORC
