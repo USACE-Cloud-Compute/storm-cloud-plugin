@@ -176,10 +176,58 @@ def validate_payload(payload: Any) -> None:
         raise ValueError(f"Missing required input path keys: {missing_keys}")
 
 
+def _preflight_local_root(local_root: Path, explicit: bool) -> None:
+    """Fail fast if the resume root isn't a usable durable mount.
+
+    A silently-unwritable or object-FUSE CC_LOCAL_ROOT would defeat resume (or,
+    on FUSE, make stormhub's per-date fsync pathological). Verify writability up
+    front and warn on a FUSE mount rather than discovering it hours into a scan.
+    """
+    probe = local_root / ".write-probe"
+    try:
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+    except OSError as e:
+        raise RuntimeError(f"local_root {local_root} is not writable: {e}") from e
+
+    if not explicit:
+        return  # default ephemeral "Local" — nothing to warn about
+
+    try:
+        resolved = str(local_root.resolve())
+        best_fstype = ""
+        best_len = -1
+        for line in Path("/proc/mounts").read_text(encoding="utf-8").splitlines():
+            fields = line.split()
+            if len(fields) < 3:
+                continue
+            mountpoint, fstype = fields[1], fields[2]
+            if (resolved == mountpoint or resolved.startswith(mountpoint.rstrip("/") + "/")) and len(
+                mountpoint
+            ) > best_len:
+                best_len, best_fstype = len(mountpoint), fstype
+        if best_fstype.startswith("fuse"):
+            log.warning(
+                "CC_LOCAL_ROOT (%s) is on a FUSE mount (%s). stormhub fsyncs the "
+                "scan CSV per date; use a block PVC, not object-storage FUSE.",
+                resolved,
+                best_fstype,
+            )
+    except OSError:
+        pass  # /proc/mounts unavailable — best-effort check only
+
+
 def run_actions(pm: PluginManager, payload: Any) -> None:
     """Dispatch each action in the payload by name."""
-    local_root = Path("Local")
+    # local_root holds every resumable artifact — the STAC catalog, the flushed
+    # storm-stats.csv scan progress, and the DSS grids. Point CC_LOCAL_ROOT at a
+    # durable mount (e.g. the pod's /model PVC) so these survive a pod restart and
+    # each action's on-disk idempotency can resume instead of repeating work.
+    # Unset -> "Local" (ephemeral overlay), preserving the previous behavior.
+    _local_base = os.environ.get("CC_LOCAL_ROOT")
+    local_root = (Path(_local_base) / "Local") if _local_base else Path("Local")
     local_root.mkdir(parents=True, exist_ok=True)
+    _preflight_local_root(local_root, explicit=bool(_local_base))
 
     interrupted = False
     succeeded = False
@@ -192,12 +240,13 @@ def run_actions(pm: PluginManager, payload: Any) -> None:
     signal.signal(signal.SIGTERM, handle_signal)
     signal.signal(signal.SIGINT, handle_signal)
 
-    # Track completed actions for checkpoint/resume
-    checkpoint_file = local_root / ".checkpoint"
-    completed_actions: set[str] = set()
-    if checkpoint_file.exists():
-        completed_actions = set(checkpoint_file.read_text().splitlines())
-        log.info("Resuming from checkpoint — already completed: %s", completed_actions)
+    # Resume is a property of the actions, not a separate ledger: every action is
+    # idempotent against local_root (process-storms reloads/resumes the catalog,
+    # convert-to-dss skips existing .dss, etc.), so a resumed run simply re-runs
+    # from the top and each action short-circuits its own completed work. This
+    # replaces the old .checkpoint skip-list, which — because it skipped
+    # process-storms outright — left ctx["collection"] unset and broke every
+    # downstream action on resume.
 
     # Shared context passed to all actions
     ctx: dict[str, Any] = {
@@ -222,15 +271,6 @@ def run_actions(pm: PluginManager, payload: Any) -> None:
                 )
                 raise ValueError(f"Unknown action: {action.name}")
 
-            if action.name in completed_actions:
-                log.info(
-                    "[%d/%d] Skipping action (already completed): %s",
-                    i + 1,
-                    len(payload.actions),
-                    action.name,
-                )
-                continue
-
             log.info(
                 "[%d/%d] Running action: %s", i + 1, len(payload.actions), action.name
             )
@@ -241,12 +281,6 @@ def run_actions(pm: PluginManager, payload: Any) -> None:
                 "Action %s completed in %.1fs",
                 action.name,
                 elapsed,
-            )
-
-            # Checkpoint after each successful action
-            completed_actions.add(action.name)
-            checkpoint_file.write_text(
-                "\n".join(sorted(completed_actions)), encoding="utf-8"
             )
 
         succeeded = True
