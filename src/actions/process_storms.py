@@ -12,6 +12,7 @@ from typing import Any
 from stormhub.met.storm_catalog import StormCatalog, new_catalog, new_collection
 
 from worker_sizing import resolve_num_workers
+from actions import aorc_preflight
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +81,14 @@ def process_storms(ctx: dict[str, Any], action: Any) -> None:
     )
 
     if collection is None:
+        # Fail fast: HEAD each required AORC year before the multi-hour scan,
+        # instead of dying mid-scan on a missing year.
+        aorc_preflight.assert_years_available(
+            start_date=attrs["start_date"],
+            end_date=end_date,
+            storm_duration_hours=storm_params["storm_duration"],
+        )
+
         catalog = new_catalog(
             catalog_id,
             str(config_path),
