@@ -187,7 +187,7 @@ def validate_payload(payload: Any) -> None:
 def run_actions(pm: PluginManager, payload: Any) -> None:
     """Dispatch each action in the payload by name."""
     cache_dir = payload.attributes.get(CACHE_DIR_ATTR) or DEFAULT_CACHE_DIR
-    local_root = Path(cache_dir)#possibly add event id to the cache directory?
+    local_root = Path(cache_dir) # possibly add event id to the cache directory?
     local_root.mkdir(parents=True, exist_ok=True)
     log.info("Cache directory (local_root): %s", local_root.resolve())
 
