@@ -87,6 +87,14 @@ class ExitCode(IntEnum):
 
 REQUIRED_ATTRS = ["catalog_id", "catalog_description", "output_path", "start_date"]
 REQUIRED_INPUT_KEYS = ["watershed", "transposition"]
+# Optional payload attribute naming the local cache/scratch directory used for the
+# STAC catalog, DSS conversion, and the resume .checkpoint. Point it at an attached
+# volume (e.g. the /model PVC) so the multi-hour catalog does NOT land on node
+# ephemeral-storage and trip a disk-pressure eviction. When unset or empty it falls
+# back to a repo-relative "Local" dir — preserving prior behavior and local runs
+# where /model does not exist.
+CACHE_DIR_ATTR = "cache_dir"
+DEFAULT_CACHE_DIR = "Local"
 
 ACTION_DISPATCH = {
     "download-inputs": download_inputs,
@@ -178,8 +186,10 @@ def validate_payload(payload: Any) -> None:
 
 def run_actions(pm: PluginManager, payload: Any) -> None:
     """Dispatch each action in the payload by name."""
-    local_root = Path("Local")
+    cache_dir = payload.attributes.get(CACHE_DIR_ATTR) or DEFAULT_CACHE_DIR
+    local_root = Path(cache_dir)  # possibly add event id to the cache directory?
     local_root.mkdir(parents=True, exist_ok=True)
+    log.info("Cache directory (local_root): %s", local_root.resolve())
 
     interrupted = False
     succeeded = False
