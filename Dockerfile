@@ -25,8 +25,6 @@ RUN python3.12 -m pip install --no-cache-dir --upgrade pip setuptools wheel && \
 # Plugin source
 COPY src src
 
-RUN chown -R stormhub:stormhub /usr/src/app
-USER stormhub
 
 # Cap intra-process thread fan-out so worker memory scales with worker count
 # only, not num_workers × cpu_count. See src/worker_sizing.py for context.
