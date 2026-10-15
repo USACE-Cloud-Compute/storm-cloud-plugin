@@ -13,6 +13,7 @@ from stormhub.met.storm_catalog import StormCatalog, new_catalog, new_collection
 
 from worker_sizing import resolve_num_workers
 from actions import aorc_preflight
+from actions import rolling_scan
 
 log = logging.getLogger(__name__)
 
@@ -96,6 +97,11 @@ def process_storms(ctx: dict[str, Any], action: Any) -> None:
             catalog_description=attrs["catalog_description"],
         )
 
+        # Rolling-window scan: read each AORC year once instead of re-reading
+        # overlapping storm windows (~3x, bit-identical). Monkey-patches
+        # collect_event_stats; opt out with CC_ROLLING_SCAN=0.
+        if rolling_scan.enabled():
+            rolling_scan.install()
         try:
             collection = new_collection(catalog, **storm_params)
         except BrokenProcessPool as e:
@@ -104,6 +110,8 @@ def process_storms(ctx: dict[str, Any], action: Any) -> None:
                 f"{storm_params['num_workers']} (likely OOM). Lower via "
                 "'num_workers' payload attribute or CC_NUM_WORKERS env."
             ) from e
+        finally:
+            rolling_scan.restore()
         if collection is None:
             raise RuntimeError("no storms found matching criteria")
 
